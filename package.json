@@ -1,0 +1,30 @@
+{
+  "name": "homebridge-appletv",
+  "version": "0.1.0",
+  "description": "A homebridge plugin for reacting to appletv play/pause events.",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "scripts": {
+    "prepublish": "npm run build",
+    "build": "npm run clean && tsc",
+    "clean": "rimraf dist"
+  },
+  "keywords": [
+    "homebridge-plugin",
+    "appletv"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/edc1591/homebridge-appletv.git"
+  },
+  "bugs": {
+    "url": "http://github.com/edc1591/homebridge-appletv/issues"
+  },
+  "engines": {
+    "node": ">=0.12.0",
+    "homebridge": ">=0.2.0"
+  },
+  "devDependencies": {
+    "rimraf": "^2.6.2"
+  }
+}

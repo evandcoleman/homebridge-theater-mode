@@ -1,0 +1,20 @@
+{
+  "bridge": {
+    "name": "Homebridge",
+    "username": "CC:22:3D:E3:CE:30",
+    "port": 51826,
+    "pin": "031-45-154"
+  },
+  "accessories": [
+    {
+      "accessory": "AppleTV",
+      "name": "Living Room AppleTV",
+      "credentials": "8958B5C7-A2A3-45DE-9D41-F179C3348C30:35373834343439612d323862662d346336312d623066662d616234333164353933613030:63316635613933652d383136342d343766392d396665612d303362346131623731306231:5c6db4656bfbc89cbeef186f46119455602147268bd076aedd05948174db2f75:f9f6f0e07898524a496bec4afb5886e3f8b1553d7fbfeb7413b2f4f592d747cd",
+      "apps": [
+        "com.plexapp.plex",
+        "com.netflix.Netflix",
+        "com.firecore.infuse"
+      ]
+    }
+  ]
+}
