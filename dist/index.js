@@ -137,9 +137,9 @@ var AppleTVProgrammableSwitch = /** @class */ (function () {
         }
         this.log("Triggering Play Switch Event");
         this.isPlaying = true;
-        // this.playService
-        //   .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
-        //   .setValue(0);
+        this.playService
+            .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
+            .setValue(0);
     };
     AppleTVProgrammableSwitch.prototype.triggerPause = function () {
         if (!this.isEnabled) {
@@ -147,9 +147,9 @@ var AppleTVProgrammableSwitch = /** @class */ (function () {
         }
         this.log("Triggering Pause Switch Event");
         this.isPlaying = false;
-        // this.pauseService
-        //   .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
-        //   .setValue(0);
+        this.pauseService
+            .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
+            .setValue(0);
     };
     AppleTVProgrammableSwitch.prototype.triggerStop = function () {
         if (!this.isEnabled) {
@@ -157,9 +157,9 @@ var AppleTVProgrammableSwitch = /** @class */ (function () {
         }
         this.log("Triggering Stop Switch Event");
         this.isPlaying = false;
-        // this.stopService
-        //   .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
-        //   .setValue(0);
+        this.stopService
+            .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
+            .setValue(0);
     };
     return AppleTVProgrammableSwitch;
 }());
