@@ -1,27 +1,27 @@
 "use strict";
 var Service, Characteristic;
-const node_appletv_1 = require("node-appletv");
-class AppleTVProgrammableSwitch {
-    constructor(log, config) {
+var node_appletv_1 = require("node-appletv");
+var AppleTVProgrammableSwitch = /** @class */ (function () {
+    function AppleTVProgrammableSwitch(log, config) {
         this.log = log;
         this.isPlaying = false;
         this.isEnabled = false;
-        let credentials = node_appletv_1.parseCredentials(config['credentials']);
-        let that = this;
+        var credentials = node_appletv_1.parseCredentials(config['credentials']);
+        var that = this;
         node_appletv_1.scan(credentials.uniqueIdentifier)
-            .then(devices => {
+            .then(function (devices) {
             that.device = devices[0];
             return that.device.openConnection(credentials);
         })
-            .then(device => {
+            .then(function (device) {
             return device.requestPlaybackQueue()
-                .then(message => {
+                .then(function (message) {
                 return device;
             });
         })
-            .then(device => {
+            .then(function (device) {
             that.device = device;
-            device.observeState((error, info) => {
+            device.observeState(function (error, info) {
                 if (!info) {
                     return;
                 }
@@ -33,47 +33,47 @@ class AppleTVProgrammableSwitch {
                     return;
                 }
                 that.lastStateMessageAt = new Date();
-                let stateIsPlaying = info.playbackState == node_appletv_1.NowPlayingInfo.State.Playing;
-                let stateIsPaused = info.playbackState == node_appletv_1.NowPlayingInfo.State.Paused;
+                var stateIsPlaying = info.playbackState == node_appletv_1.NowPlayingInfo.State.Playing;
+                var stateIsPaused = info.playbackState == node_appletv_1.NowPlayingInfo.State.Paused;
                 if (stateIsPlaying && !that.isPlaying) {
                     that.triggerPlay();
-                    that.pollForStop(() => {
+                    that.pollForStop(function () {
                         that.triggerStop();
                     });
                 }
                 else if (stateIsPaused && that.isPlaying) {
                     that.triggerPause();
-                    that.pollForStop(() => {
+                    that.pollForStop(function () {
                         that.triggerStop();
                     });
                 }
             });
         })
-            .catch(error => {
+            .catch(function (error) {
             that.log(error);
         });
     }
-    identify(callback) {
+    AppleTVProgrammableSwitch.prototype.identify = function (callback) {
         this.log('Identify requested!');
         callback();
-    }
-    getServices() {
+    };
+    AppleTVProgrammableSwitch.prototype.getServices = function () {
         if (this.services != null) {
             return this.services;
         }
-        let informationService = new Service.AccessoryInformation();
+        var informationService = new Service.AccessoryInformation();
         informationService
             .setCharacteristic(Characteristic.Manufacturer, 'Apple')
             .setCharacteristic(Characteristic.Model, 'Apple TV')
             .setCharacteristic(Characteristic.SerialNumber, '00000000');
         this.switchService = new Service.Switch("Movie Mode", "Movie Mode");
-        let that = this;
+        var that = this;
         this.switchService
             .getCharacteristic(Characteristic.On)
-            .on('get', callback => {
+            .on('get', function (callback) {
             callback(that.isEnabled);
         })
-            .on('set', (value, callback) => {
+            .on('set', function (value, callback) {
             that.isEnabled = value;
             callback();
         });
@@ -106,14 +106,14 @@ class AppleTVProgrammableSwitch {
             this.stopService
         ];
         return this.services;
-    }
-    pollForStop(callback) {
+    };
+    AppleTVProgrammableSwitch.prototype.pollForStop = function (callback) {
         if (this.stopPoller != null) {
             return;
         }
-        let that = this;
-        this.stopPoller = setInterval(() => {
-            let diff = (new Date()).getTime() - that.lastStateMessageAt.getTime();
+        var that = this;
+        this.stopPoller = setInterval(function () {
+            var diff = (new Date()).getTime() - that.lastStateMessageAt.getTime();
             if (diff > 3500) {
                 callback();
                 clearInterval(that.stopPoller);
@@ -122,16 +122,16 @@ class AppleTVProgrammableSwitch {
             else if (diff > 2000) {
                 that.device
                     .requestPlaybackQueue()
-                    .then(info => {
+                    .then(function (info) {
                     that.lastStateMessageAt = new Date();
                 })
-                    .catch(error => {
+                    .catch(function (error) {
                     that.log(error);
                 });
             }
         }, 500);
-    }
-    triggerPlay() {
+    };
+    AppleTVProgrammableSwitch.prototype.triggerPlay = function () {
         if (!this.isEnabled) {
             return;
         }
@@ -140,8 +140,8 @@ class AppleTVProgrammableSwitch {
         // this.playService
         //   .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
         //   .setValue(0);
-    }
-    triggerPause() {
+    };
+    AppleTVProgrammableSwitch.prototype.triggerPause = function () {
         if (!this.isEnabled) {
             return;
         }
@@ -150,8 +150,8 @@ class AppleTVProgrammableSwitch {
         // this.pauseService
         //   .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
         //   .setValue(0);
-    }
-    triggerStop() {
+    };
+    AppleTVProgrammableSwitch.prototype.triggerStop = function () {
         if (!this.isEnabled) {
             return;
         }
@@ -160,8 +160,9 @@ class AppleTVProgrammableSwitch {
         // this.stopService
         //   .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
         //   .setValue(0);
-    }
-}
+    };
+    return AppleTVProgrammableSwitch;
+}());
 module.exports = function (homebridge) {
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;

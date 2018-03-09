@@ -8,7 +8,7 @@ export = function(homebridge: any) {
 }
 
 class AppleTVProgrammableSwitch {
-  private services: Array<any>;
+  private services: any[];
   private switchService: any;
   private playService: any;
   private pauseService: any;
@@ -71,7 +71,7 @@ class AppleTVProgrammableSwitch {
     callback();
   }
 
-  getServices(): Array<any> {
+  getServices(): any[] {
     if (this.services != null) {
       return this.services;
     }
