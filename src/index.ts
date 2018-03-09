@@ -15,7 +15,7 @@ class AppleTVProgrammableSwitch {
   private stopService: any;
 
   private device: AppleTV;
-  private isPlaying: boolean = false;
+  private playbackState: AppleTVProgrammableSwitch.PlaybackState = AppleTVProgrammableSwitch.PlaybackState.Stopped;
   private lastStateMessageAt: Date;
   private stopPoller: NodeJS.Timer;
   private isEnabled: boolean = false;
@@ -38,6 +38,7 @@ class AppleTVProgrammableSwitch {
         that.device = device;
         device.observeState((error, info) => {
           if (!info) { return; }
+
           if (!that.isEnabled) {
             if (that.stopPoller != null) {
               clearInterval(that.stopPoller);
@@ -45,25 +46,42 @@ class AppleTVProgrammableSwitch {
             }
             return;
           }
+
           that.lastStateMessageAt = new Date();
           let stateIsPlaying = info.playbackState == NowPlayingInfo.State.Playing;
           let stateIsPaused = info.playbackState == NowPlayingInfo.State.Paused;
-          if (stateIsPlaying && !that.isPlaying) {
+          if (stateIsPlaying && !that.isPlaying()) {
             that.triggerPlay();
             that.pollForStop(() => {
               that.triggerStop();
             });
-          } else if (stateIsPaused && that.isPlaying) {
+          } else if (stateIsPaused && that.isPlaying()) {
             that.triggerPause();
             that.pollForStop(() => {
               that.triggerStop();
             });
+          } else if (Object.keys(info.message.supportedCommands).length == 0 && !that.isStopped()) {
+            clearInterval(that.stopPoller);
+            that.stopPoller = null;
+            that.triggerStop();
           }
         });
       })
       .catch(error => {
         that.log(error);
       });
+  }
+
+  private isPlaying(): boolean {
+    return this.playbackState == AppleTVProgrammableSwitch.PlaybackState.Playing;
+  }
+
+  private isPaused(): boolean {
+    return this.playbackState == AppleTVProgrammableSwitch.PlaybackState.Paused;
+  }
+
+  private isStopped(): boolean {
+    return this.playbackState == AppleTVProgrammableSwitch.PlaybackState.Stopped;
   }
 
   identify(callback: () => void) {
@@ -154,7 +172,7 @@ class AppleTVProgrammableSwitch {
   private triggerPlay() {
     if (!this.isEnabled) { return; }
     this.log("Triggering Play Switch Event");
-    this.isPlaying = true;
+    this.playbackState = AppleTVProgrammableSwitch.PlaybackState.Playing;
     this.playService
       .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
       .setValue(0);
@@ -163,7 +181,7 @@ class AppleTVProgrammableSwitch {
   private triggerPause() {
     if (!this.isEnabled) { return; }
     this.log("Triggering Pause Switch Event");
-    this.isPlaying = false;
+    this.playbackState = AppleTVProgrammableSwitch.PlaybackState.Paused;
     this.pauseService
       .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
       .setValue(0);
@@ -172,9 +190,17 @@ class AppleTVProgrammableSwitch {
   private triggerStop() {
     if (!this.isEnabled) { return; }
     this.log("Triggering Stop Switch Event");
-    this.isPlaying = false;
+    this.playbackState = AppleTVProgrammableSwitch.PlaybackState.Stopped;
     this.stopService
       .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
       .setValue(0);
+  }
+}
+
+module AppleTVProgrammableSwitch {
+  export enum PlaybackState {
+    Playing = "playing",
+    Paused = "paused",
+    Stopped = "stopped"
   }
 }

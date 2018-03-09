@@ -4,7 +4,7 @@ var node_appletv_1 = require("node-appletv");
 var AppleTVProgrammableSwitch = /** @class */ (function () {
     function AppleTVProgrammableSwitch(log, config) {
         this.log = log;
-        this.isPlaying = false;
+        this.playbackState = AppleTVProgrammableSwitch.PlaybackState.Stopped;
         this.isEnabled = false;
         var credentials = node_appletv_1.parseCredentials(config['credentials']);
         var that = this;
@@ -35,17 +35,22 @@ var AppleTVProgrammableSwitch = /** @class */ (function () {
                 that.lastStateMessageAt = new Date();
                 var stateIsPlaying = info.playbackState == node_appletv_1.NowPlayingInfo.State.Playing;
                 var stateIsPaused = info.playbackState == node_appletv_1.NowPlayingInfo.State.Paused;
-                if (stateIsPlaying && !that.isPlaying) {
+                if (stateIsPlaying && !that.isPlaying()) {
                     that.triggerPlay();
                     that.pollForStop(function () {
                         that.triggerStop();
                     });
                 }
-                else if (stateIsPaused && that.isPlaying) {
+                else if (stateIsPaused && that.isPlaying()) {
                     that.triggerPause();
                     that.pollForStop(function () {
                         that.triggerStop();
                     });
+                }
+                else if (Object.keys(info.message.supportedCommands).length == 0 && !that.isStopped()) {
+                    clearInterval(that.stopPoller);
+                    that.stopPoller = null;
+                    that.triggerStop();
                 }
             });
         })
@@ -53,6 +58,15 @@ var AppleTVProgrammableSwitch = /** @class */ (function () {
             that.log(error);
         });
     }
+    AppleTVProgrammableSwitch.prototype.isPlaying = function () {
+        return this.playbackState == AppleTVProgrammableSwitch.PlaybackState.Playing;
+    };
+    AppleTVProgrammableSwitch.prototype.isPaused = function () {
+        return this.playbackState == AppleTVProgrammableSwitch.PlaybackState.Paused;
+    };
+    AppleTVProgrammableSwitch.prototype.isStopped = function () {
+        return this.playbackState == AppleTVProgrammableSwitch.PlaybackState.Stopped;
+    };
     AppleTVProgrammableSwitch.prototype.identify = function (callback) {
         this.log('Identify requested!');
         callback();
@@ -136,7 +150,7 @@ var AppleTVProgrammableSwitch = /** @class */ (function () {
             return;
         }
         this.log("Triggering Play Switch Event");
-        this.isPlaying = true;
+        this.playbackState = AppleTVProgrammableSwitch.PlaybackState.Playing;
         this.playService
             .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
             .setValue(0);
@@ -146,7 +160,7 @@ var AppleTVProgrammableSwitch = /** @class */ (function () {
             return;
         }
         this.log("Triggering Pause Switch Event");
-        this.isPlaying = false;
+        this.playbackState = AppleTVProgrammableSwitch.PlaybackState.Paused;
         this.pauseService
             .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
             .setValue(0);
@@ -156,13 +170,21 @@ var AppleTVProgrammableSwitch = /** @class */ (function () {
             return;
         }
         this.log("Triggering Stop Switch Event");
-        this.isPlaying = false;
+        this.playbackState = AppleTVProgrammableSwitch.PlaybackState.Stopped;
         this.stopService
             .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
             .setValue(0);
     };
     return AppleTVProgrammableSwitch;
 }());
+(function (AppleTVProgrammableSwitch) {
+    var PlaybackState;
+    (function (PlaybackState) {
+        PlaybackState["Playing"] = "playing";
+        PlaybackState["Paused"] = "paused";
+        PlaybackState["Stopped"] = "stopped";
+    })(PlaybackState = AppleTVProgrammableSwitch.PlaybackState || (AppleTVProgrammableSwitch.PlaybackState = {}));
+})(AppleTVProgrammableSwitch || (AppleTVProgrammableSwitch = {}));
 module.exports = function (homebridge) {
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
