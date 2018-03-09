@@ -108,6 +108,7 @@ class AppleTVProgrammableSwitch {
         callback(that.isEnabled);
       })
       .on('set', (value, callback) => {
+        that.log("Setting movie mode enabled to " + value);
         that.isEnabled = value;
         callback();
       });
