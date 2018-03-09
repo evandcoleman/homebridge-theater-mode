@@ -155,26 +155,26 @@ class AppleTVProgrammableSwitch {
     if (!this.isEnabled) { return; }
     this.log("Triggering Play Switch Event");
     this.isPlaying = true;
-    // this.playService
-    //   .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
-    //   .setValue(0);
+    this.playService
+      .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
+      .setValue(0);
   }
 
   private triggerPause() {
     if (!this.isEnabled) { return; }
     this.log("Triggering Pause Switch Event");
     this.isPlaying = false;
-    // this.pauseService
-    //   .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
-    //   .setValue(0);
+    this.pauseService
+      .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
+      .setValue(0);
   }
 
   private triggerStop() {
     if (!this.isEnabled) { return; }
     this.log("Triggering Stop Switch Event");
     this.isPlaying = false;
-    // this.stopService
-    //   .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
-    //   .setValue(0);
+    this.stopService
+      .getCharacteristic(Characteristic.ProgrammableSwitchEvent)
+      .setValue(0);
   }
 }
