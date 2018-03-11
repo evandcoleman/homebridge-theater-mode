@@ -1,7 +1,7 @@
 {
-  "name": "homebridge-appletv",
+  "name": "homebridge-theater-mode",
   "version": "0.1.0",
-  "description": "A homebridge plugin for reacting to appletv play/pause events.",
+  "description": "A homebridge plugin for reacting to Apple TV play/pause events.",
   "license": "MIT",
   "main": "dist/index.js",
   "scripts": {
@@ -15,10 +15,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/edc1591/homebridge-appletv.git"
+    "url": "git://github.com/edc1591/homebridge-theater-mode.git"
   },
   "bugs": {
-    "url": "http://github.com/edc1591/homebridge-appletv/issues"
+    "url": "http://github.com/edc1591/homebridge-theater-mode/issues"
   },
   "engines": {
     "node": ">=0.12.0",

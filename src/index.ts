@@ -4,7 +4,7 @@ import { scan, parseCredentials, NowPlayingInfo, AppleTV } from 'node-appletv';
 export = function(homebridge: any) {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
-  homebridge.registerAccessory('homebridge-appletv', 'AppleTV', AppleTVProgrammableSwitch);
+  homebridge.registerAccessory('homebridge-theater-mode', 'AppleTVTheaterMode', AppleTVProgrammableSwitch);
 }
 
 class AppleTVProgrammableSwitch {
@@ -100,15 +100,15 @@ class AppleTVProgrammableSwitch {
       .setCharacteristic(Characteristic.Model, 'Apple TV')
       .setCharacteristic(Characteristic.SerialNumber, '00000000');
 
-    this.switchService = new Service.Switch("Movie Mode", "Movie Mode");
+    this.switchService = new Service.Switch("Theater Mode", "Theater Mode");
     let that = this;
     this.switchService
       .getCharacteristic(Characteristic.On)
       .on('get', callback => {
-        callback(that.isEnabled);
+        callback(null, that.isEnabled);
       })
       .on('set', (value, callback) => {
-        that.log("Setting movie mode enabled to " + value);
+        that.log("Setting theater mode enabled to " + value);
         that.isEnabled = value;
         callback();
       });
