@@ -1,5 +1,5 @@
 var Service, Characteristic;
-import { scan, parseCredentials, NowPlayingInfo, AppleTV } from 'node-appletv';
+import { scan, parseCredentials, NowPlayingInfo, AppleTV, SupportedCommand } from 'node-appletv';
 
 export = function(homebridge: any) {
   Service = homebridge.hap.Service;
@@ -16,56 +16,22 @@ class AppleTVProgrammableSwitch {
 
   private device: AppleTV;
   private playbackState: AppleTVProgrammableSwitch.PlaybackState = AppleTVProgrammableSwitch.PlaybackState.Stopped;
-  private lastStateMessageAt: Date;
-  private stopPoller: NodeJS.Timer;
   private isEnabled: boolean = false;
 
-  constructor(private log: (string) => void, config: {}) {
-    let credentials = parseCredentials(config['credentials']);
+  constructor(private log: (string) => void, config: any) {
+    let credentials = parseCredentials(config.credentials);
     let that = this;
     scan(credentials.uniqueIdentifier)
       .then(devices => {
         that.device = devices[0];
+        that.device.on('error', (error: Error) => {
+          that.log(error.message);
+          that.log(error.stack);
+        });
         return that.device.openConnection(credentials);
       })
       .then(device => {
-        return device.requestPlaybackQueue()
-          .then(message => {
-            return device;
-          });
-      })
-      .then(device => {
-        that.device = device;
-        device.observeState((error, info) => {
-          if (!info) { return; }
-
-          if (!that.isEnabled) {
-            if (that.stopPoller != null) {
-              clearInterval(that.stopPoller);
-              that.stopPoller = null;
-            }
-            return;
-          }
-
-          that.lastStateMessageAt = new Date();
-          let stateIsPlaying = info.playbackState == NowPlayingInfo.State.Playing;
-          let stateIsPaused = info.playbackState == NowPlayingInfo.State.Paused;
-          if (stateIsPlaying && !that.isPlaying()) {
-            that.triggerPlay();
-            that.pollForStop(() => {
-              that.triggerStop();
-            });
-          } else if (stateIsPaused && that.isPlaying()) {
-            that.triggerPause();
-            that.pollForStop(() => {
-              that.triggerStop();
-            });
-          } else if (Object.keys(info.message.supportedCommands).length == 0 && !that.isStopped()) {
-            clearInterval(that.stopPoller);
-            that.stopPoller = null;
-            that.triggerStop();
-          }
-        });
+        log("Opened connection to " + config.name);
       })
       .catch(error => {
         that.log(error);
@@ -82,6 +48,36 @@ class AppleTVProgrammableSwitch {
 
   private isStopped(): boolean {
     return this.playbackState == AppleTVProgrammableSwitch.PlaybackState.Stopped;
+  }
+
+  private setEnabled(value: boolean) {
+    this.log("Setting theater mode enabled to " + value);
+    this.isEnabled = value;
+
+    if (value) {
+      let that = this;
+      this.device.on('supportedCommands', (commands: SupportedCommand[]) => {
+        if (commands.length == 0 && (that.isPlaying() || that.isPaused())) {
+          that.triggerStop();
+        }
+      })
+      .on('nowPlaying', (info: NowPlayingInfo) => {
+        if (info == null) {
+          return;
+        }
+
+        let stateIsPlaying = info.playbackState == NowPlayingInfo.State.Playing;
+        let stateIsPaused = info.playbackState == NowPlayingInfo.State.Paused;
+        if (stateIsPlaying && !that.isPlaying()) {
+          that.triggerPlay();
+        } else if (stateIsPaused && that.isPlaying()) {
+          that.triggerPause();
+        }
+      });
+    } else {
+      this.device.removeAllListeners('nowPlaying');
+      this.device.removeAllListeners('supportedCommands');
+    }
   }
 
   identify(callback: () => void) {
@@ -108,8 +104,7 @@ class AppleTVProgrammableSwitch {
         callback(null, that.isEnabled);
       })
       .on('set', (value, callback) => {
-        that.log("Setting theater mode enabled to " + value);
-        that.isEnabled = value;
+        that.setEnabled(value);
         callback();
       });
 
@@ -146,28 +141,6 @@ class AppleTVProgrammableSwitch {
     ];
 
     return this.services;
-  }
-
-  private pollForStop(callback: () => void) {
-    if (this.stopPoller != null) { return; }
-    let that = this;
-    this.stopPoller = setInterval(() => {
-      let diff = (new Date()).getTime() - that.lastStateMessageAt.getTime();
-      if (diff > 3500) {
-        callback();
-        clearInterval(that.stopPoller);
-        that.stopPoller = null;
-      } else if (diff > 2000) {
-        that.device
-          .requestPlaybackQueue()
-          .then(info => {
-            that.lastStateMessageAt = new Date();
-          })
-          .catch(error => {
-            that.log(error);
-          });
-      }
-    }, 500);
   }
 
   private triggerPlay() {

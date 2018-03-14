@@ -6,53 +6,19 @@ var AppleTVProgrammableSwitch = /** @class */ (function () {
         this.log = log;
         this.playbackState = AppleTVProgrammableSwitch.PlaybackState.Stopped;
         this.isEnabled = false;
-        var credentials = node_appletv_1.parseCredentials(config['credentials']);
+        var credentials = node_appletv_1.parseCredentials(config.credentials);
         var that = this;
         node_appletv_1.scan(credentials.uniqueIdentifier)
             .then(function (devices) {
             that.device = devices[0];
+            that.device.on('error', function (error) {
+                that.log(error.message);
+                that.log(error.stack);
+            });
             return that.device.openConnection(credentials);
         })
             .then(function (device) {
-            return device.requestPlaybackQueue()
-                .then(function (message) {
-                return device;
-            });
-        })
-            .then(function (device) {
-            that.device = device;
-            device.observeState(function (error, info) {
-                if (!info) {
-                    return;
-                }
-                if (!that.isEnabled) {
-                    if (that.stopPoller != null) {
-                        clearInterval(that.stopPoller);
-                        that.stopPoller = null;
-                    }
-                    return;
-                }
-                that.lastStateMessageAt = new Date();
-                var stateIsPlaying = info.playbackState == node_appletv_1.NowPlayingInfo.State.Playing;
-                var stateIsPaused = info.playbackState == node_appletv_1.NowPlayingInfo.State.Paused;
-                if (stateIsPlaying && !that.isPlaying()) {
-                    that.triggerPlay();
-                    that.pollForStop(function () {
-                        that.triggerStop();
-                    });
-                }
-                else if (stateIsPaused && that.isPlaying()) {
-                    that.triggerPause();
-                    that.pollForStop(function () {
-                        that.triggerStop();
-                    });
-                }
-                else if (Object.keys(info.message.supportedCommands).length == 0 && !that.isStopped()) {
-                    clearInterval(that.stopPoller);
-                    that.stopPoller = null;
-                    that.triggerStop();
-                }
-            });
+            log("Opened connection to " + config.name);
         })
             .catch(function (error) {
             that.log(error);
@@ -67,6 +33,35 @@ var AppleTVProgrammableSwitch = /** @class */ (function () {
     AppleTVProgrammableSwitch.prototype.isStopped = function () {
         return this.playbackState == AppleTVProgrammableSwitch.PlaybackState.Stopped;
     };
+    AppleTVProgrammableSwitch.prototype.setEnabled = function (value) {
+        this.log("Setting theater mode enabled to " + value);
+        this.isEnabled = value;
+        if (value) {
+            var that_1 = this;
+            this.device.on('supportedCommands', function (commands) {
+                if (commands.length == 0 && (that_1.isPlaying() || that_1.isPaused())) {
+                    that_1.triggerStop();
+                }
+            })
+                .on('nowPlaying', function (info) {
+                if (info == null) {
+                    return;
+                }
+                var stateIsPlaying = info.playbackState == node_appletv_1.NowPlayingInfo.State.Playing;
+                var stateIsPaused = info.playbackState == node_appletv_1.NowPlayingInfo.State.Paused;
+                if (stateIsPlaying && !that_1.isPlaying()) {
+                    that_1.triggerPlay();
+                }
+                else if (stateIsPaused && that_1.isPlaying()) {
+                    that_1.triggerPause();
+                }
+            });
+        }
+        else {
+            this.device.removeAllListeners('nowPlaying');
+            this.device.removeAllListeners('supportedCommands');
+        }
+    };
     AppleTVProgrammableSwitch.prototype.identify = function (callback) {
         this.log('Identify requested!');
         callback();
@@ -80,16 +75,15 @@ var AppleTVProgrammableSwitch = /** @class */ (function () {
             .setCharacteristic(Characteristic.Manufacturer, 'Apple')
             .setCharacteristic(Characteristic.Model, 'Apple TV')
             .setCharacteristic(Characteristic.SerialNumber, '00000000');
-        this.switchService = new Service.Switch("Movie Mode", "Movie Mode");
+        this.switchService = new Service.Switch("Theater Mode", "Theater Mode");
         var that = this;
         this.switchService
             .getCharacteristic(Characteristic.On)
             .on('get', function (callback) {
-            callback(that.isEnabled);
+            callback(null, that.isEnabled);
         })
             .on('set', function (value, callback) {
-            that.log("Setting movie mode enabled to " + value);
-            that.isEnabled = value;
+            that.setEnabled(value);
             callback();
         });
         this.playService = new Service.StatelessProgrammableSwitch("Play", "Play");
@@ -121,30 +115,6 @@ var AppleTVProgrammableSwitch = /** @class */ (function () {
             this.stopService
         ];
         return this.services;
-    };
-    AppleTVProgrammableSwitch.prototype.pollForStop = function (callback) {
-        if (this.stopPoller != null) {
-            return;
-        }
-        var that = this;
-        this.stopPoller = setInterval(function () {
-            var diff = (new Date()).getTime() - that.lastStateMessageAt.getTime();
-            if (diff > 3500) {
-                callback();
-                clearInterval(that.stopPoller);
-                that.stopPoller = null;
-            }
-            else if (diff > 2000) {
-                that.device
-                    .requestPlaybackQueue()
-                    .then(function (info) {
-                    that.lastStateMessageAt = new Date();
-                })
-                    .catch(function (error) {
-                    that.log(error);
-                });
-            }
-        }, 500);
     };
     AppleTVProgrammableSwitch.prototype.triggerPlay = function () {
         if (!this.isEnabled) {
@@ -189,5 +159,5 @@ var AppleTVProgrammableSwitch = /** @class */ (function () {
 module.exports = function (homebridge) {
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
-    homebridge.registerAccessory('homebridge-appletv', 'AppleTV', AppleTVProgrammableSwitch);
+    homebridge.registerAccessory('homebridge-theater-mode', 'AppleTVTheaterMode', AppleTVProgrammableSwitch);
 };
