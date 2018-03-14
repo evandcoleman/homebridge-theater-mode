@@ -1,67 +1,73 @@
-# homebridge-harmony-api
+# homebridge-theater-mode
 
-> A [homebridge](https://github.com/nfarina/homebridge) plugin for controlling individual Harmony Hub devices via [harmony-api](https://github.com/maddox/harmony-api).
+> A [homebridge](https://github.com/nfarina/homebridge) plugin to make your HomeKit devices react to the play/pause state of your Apple TV. Configured via the Home app.
 
-[![npm version](https://badge.fury.io/js/homebridge-harmony-api.svg)](https://badge.fury.io/js/homebridge-harmony-api)
+[![npm version](https://badge.fury.io/js/homebridge-theater-mode.svg)](https://badge.fury.io/js/homebridge-theater-mode)
 [![License][license-image]][license-url]
 
-`homebridge-harmony-api` currently supports `Switch`, `Fan`, and `Speaker` accessory types.
+## Overview
+
+`homebridge-theater-mode` started as a pet project of mine. I loved using Plex's webhooks to control my Hue bulbs, but I wanted that to extend to other apps on my Apple TV.
+
+To enable this project, I created [node-appletv](https://github.com/edc1591/node-appletv) to communicate with the Apple TV. This uses a new protocol introduced by Apple with the 4th-generation Apple TV and there still isn't much out there about it. I did my best to reverse engineer the iOS Apple TV app to determine how it tracks the play/pause state, depsite the quirks I ran into with the new protocol.
+
+Because of this, at times the plugin can be slightly slow to receive state changes, but it always does seem to settle out after a few seconds. It works well enough for me, so I hope it does for you, too!
 
 ## Installation
 
-This guide assumes that you already have a running [`harmony-api`](https://github.com/maddox/harmony-api) server.
+Follow the steps below to pair your Apple TV after installation is complete.
 
-```
+```bash
 # Install homebridge
 $ npm install -g homebridge
 
 # Install plugin
-$ npm install -g homebridge-harmony-api
+$ npm install -g homebridge-theater-mode
 ```
 
-or add `homebridge-harmony-api` to your `install.sh` file.
+or add `homebridge-theater-mode` to your `install.sh` file.
 
-## Configuration
+## Pairing
 
-Configuration is as simple as adding a new `accessories` object for each device you'd like to control. Below is an example for an IR controlled air conditioner that I've taught my Harmony Hub to control. For more examples, see [config.example.json](config.example.json).
+The pairing process makes use of the command line utility that ships with `node-appletv`. You must be on the same network as your Apple TV to pair.
+
+```bash
+# Install node-appletv
+$ npm install -g node-appletv
+
+# Scan for Apple TVs and follow the prompts
+$ appletv pair
+```
+
+At the end of the process, you'll received a credentials string. This string should be input into the `credentials` field in your `config.json` entry for the Apple TV. See the example below or [config.example.json](config.example.json) for a practical use.
 
 ```json
 {
-  "accessory": "HarmonyDevice",
-  "name": "Living Room Air Conditioner",
-  "service": "Fan",
-  "host": "localhost",
-  "port": 8282,
-  "hub_slug": "living-room",
-  "device_slug": "air-conditioner",
-  "commands": {
-    "on": "power-toggle",
-    "off": "power-toggle",
-    "rotation_speed": {
-      // the keys here correspond to the rotation speed percentage,
-      // the values are the corresponding command to send
-      "33": "low",
-      "67": "med",
-      "100": "high"
-    }
-  }
+  "accessory": "AppleTVTheaterMode",
+  "name": "Living Room Apple TV",
+  "credentials": "<credentials>"
 }
 ```
 
-## Caveats
+## Usage
 
-`harmony-api` currently conflicts with the [`homebridge-harmonyhub`](https://github.com/KraigM/homebridge-harmonyhub) plugin. You won't be able to run them on the same host because they bind to the same port to discover harmony hubs on your network. My personal workaround for this is to link my Harmony Activities to HomeKit via my SmartThings hub and then using the [`homebridge-smartthings`](https://github.com/pdlove/homebridge-smartthings) plugin. In the future I'd like to add support for harmony activities to this plugin.
+<img align="right" src="images/theater-mode-switch.png">Two devices are added to your Home app by `homebridge-theater-mode` for each paired Apple TV.
 
-## TODO
+The **Theater Mode Switch** is used to toggle theater mode on and off. It is recommend that you turn this off when you are done watching. This will prevent your lights from going crazy when you start AirPlaying music later. Each Apple TV gets its own Theater Mode switch.
 
-* Add support for harmony hub activities
-* Investigate adding support for more HomeKit services and characteristics
+<img style="padding-right: 12px;" align="left" src="images/programmable-switch.png">The **Apple TV Programmable Light Switch** is used to define what should happen when theater mode is enabled and your Apple TV enters one of three states (playing, paused, and stopped). This programmable switch has three "buttons," one for each state. 3D touch on the programmable switch and tap details. You'll then be able to configure each of these three buttons. See below for which button is which.
+
+<br>
+
+|               |       Apple TV State      |
+| :-----------: | :-----------------------: |
+| Button 1      | Play                      |
+| Button 2      | Plause                    |
+| Button 3      | Stop (Tapping "Menu")     |
 
 ## Meta
 
 You can find me on Twitter [@edc1591](https://twitter.com/edc1591)
-
-[Hire me!](http://edc.me)
 
 Distributed under the MIT license. See ``LICENSE`` for more information.
 
