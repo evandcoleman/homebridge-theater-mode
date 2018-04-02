@@ -62,7 +62,7 @@ The **Theater Mode Switch** is used to toggle theater mode on and off. It is rec
 |               |       Apple TV State      |
 | :-----------: | :-----------------------: |
 | Button 1      | Play                      |
-| Button 2      | Plause                    |
+| Button 2      | Pause                     |
 | Button 3      | Stop (Tapping "Menu")     |
 
 ## Meta
