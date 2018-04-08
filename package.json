@@ -1,6 +1,6 @@
 {
   "name": "homebridge-theater-mode",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A homebridge plugin for reacting to Apple TV play/pause events.",
   "license": "MIT",
   "main": "dist/index.js",
